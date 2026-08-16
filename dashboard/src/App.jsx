@@ -1,316 +1,64 @@
-import {
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  Gauge,
-  ShieldCheck,
-  ScanLine,
-  Settings2,
-  TrainFront,
-} from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import React, { useState } from "react";
+import Header from "./components/Header";
+import HeroSection from "./components/HeroSection";
+import MetricCards from "./components/MetricCards";
+import MainInspectionView from "./components/MainInspectionView";
+import SelfCalibrationPanel from "./components/SelfCalibrationPanel";
+import ReliabilityPanel from "./components/ReliabilityPanel";
+import TrackHealthGauge from "./components/TrackHealthGauge";
+import DefectDetectionPanel from "./components/DefectDetectionPanel";
+import DecisionSupportPanel from "./components/DecisionSupportPanel";
+import CompletePipeline from "./components/CompletePipeline";
+import WhySelfCalibration from "./components/WhySelfCalibration";
+import BatchOverview from "./components/BatchOverview";
+import InspectionHistoryTable from "./components/InspectionHistoryTable";
+import Footer from "./components/Footer";
+
+import { allInspections, defaultSelectedId } from "./data/inspectionData";
 import "./App.css";
 
-const qualityData = [
-  { name: "Before", value: 60.67 },
-  { name: "After", value: 83.75 },
-];
-
-function MetricCard({ icon: Icon, title, value, subtitle }) {
-  return (
-    <div className="metric-card">
-      <div className="metric-icon">
-        <Icon size={22} />
-      </div>
-
-      <div>
-        <p>{title}</p>
-        <h2>{value}</h2>
-        <span>{subtitle}</span>
-      </div>
-    </div>
-  );
-}
-
 function App() {
+  const [selectedInspection, setSelectedInspection] = useState(() => {
+    return allInspections.find((i) => i.id === defaultSelectedId) || allInspections[0];
+  });
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-icon">
-            <TrainFront size={27} />
-          </div>
+    <div className="app-container">
+      <Header />
 
-          <div>
-            <h1>Railway Track Health</h1>
-            <span>Autonomous Inspection Intelligence</span>
-          </div>
-        </div>
+      <main className="dashboard-body">
+        <HeroSection activeInspection={selectedInspection} />
 
-        <div className="system-status">
-          <span className="status-dot"></span>
-          SYSTEM ONLINE
-        </div>
-      </header>
+        <MetricCards data={selectedInspection} />
 
-      <main className="dashboard">
-        <section className="hero">
-          <div>
-            <span className="eyebrow">AI INSPECTION PLATFORM</span>
-
-            <h2>
-              Railway Track
-              <br />
-              <strong>Health Intelligence</strong>
-            </h2>
-
-            <p>
-              AI-powered inspection combining adaptive image calibration,
-              defect detection and inspection reliability analysis.
-            </p>
-          </div>
-
-          <div className="inspection-badge">
-            <ScanLine size={20} />
-            INSPECTION COMPLETE
-          </div>
+        <section className="dashboard-grid grid-2col">
+          <MainInspectionView data={selectedInspection} />
+          <SelfCalibrationPanel data={selectedInspection} />
         </section>
 
-        <section className="metrics-grid">
-          <MetricCard
-            icon={Gauge}
-            title="Track Condition Index"
-            value="68.64"
-            subtitle="FAIR CONDITION"
-          />
-
-          <MetricCard
-            icon={ShieldCheck}
-            title="Inspection Reliability"
-            value="64.31"
-            subtitle="MODERATE"
-          />
-
-          <MetricCard
-            icon={Activity}
-            title="Image Quality"
-            value="83.75"
-            subtitle="+23.08 IMPROVEMENT"
-          />
-
-          <MetricCard
-            icon={AlertTriangle}
-            title="Defects Detected"
-            value="0"
-            subtitle="NO DEFECTS FOUND"
-          />
+        <section className="dashboard-grid grid-2col">
+          <ReliabilityPanel data={selectedInspection} />
+          <TrackHealthGauge data={selectedInspection} />
         </section>
 
-        <section className="content-grid">
-          <div className="panel image-panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">INSPECTED IMAGE</span>
-                <h3>Railway Track Analysis</h3>
-              </div>
-
-              <div className="live-tag">
-                <span></span>
-                ANALYZED
-              </div>
-            </div>
-
-            <div className="image-placeholder">
-              <div className="scan-line"></div>
-
-              <div className="track-visual">
-                <div className="rail rail-left"></div>
-                <div className="rail rail-right"></div>
-
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="sleeper"
-                    style={{ top: `${12 + i * 11}%` }}
-                  ></div>
-                ))}
-              </div>
-
-              <div className="image-overlay">
-                <span>Image-095</span>
-                <span>CALIBRATED</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">AI ANALYSIS</span>
-                <h3>Inspection Results</h3>
-              </div>
-            </div>
-
-            <div className="analysis-list">
-              <div className="analysis-row">
-                <span>Detection Status</span>
-                <strong className="success">
-                  <CheckCircle2 size={17} />
-                  No Defects
-                </strong>
-              </div>
-
-              <div className="analysis-row">
-                <span>Mean Confidence</span>
-                <strong>0.00%</strong>
-              </div>
-
-              <div className="analysis-row">
-                <span>Detection Stability</span>
-                <strong>100.00%</strong>
-              </div>
-
-              <div className="analysis-row">
-                <span>Reliability Status</span>
-                <strong>MODERATE</strong>
-              </div>
-
-              <div className="analysis-row">
-                <span>Maintenance Priority</span>
-                <strong className="warning">MEDIUM</strong>
-              </div>
-            </div>
-
-            <div className="recommendation">
-              <Settings2 size={19} />
-
-              <div>
-                <span>RECOMMENDATION</span>
-                <p>Schedule preventive inspection.</p>
-              </div>
-            </div>
-          </div>
+        <section className="dashboard-grid grid-2col">
+          <DefectDetectionPanel data={selectedInspection} />
+          <DecisionSupportPanel data={selectedInspection} />
         </section>
 
-        <section className="content-grid lower-grid">
-          <div className="panel chart-panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">IMAGE CALIBRATION</span>
-                <h3>Quality Improvement</h3>
-              </div>
+        <CompletePipeline data={selectedInspection} />
 
-              <strong className="improvement">+23.08</strong>
-            </div>
+        <WhySelfCalibration />
 
-            <div className="chart">
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={qualityData}>
-                  <defs>
-                    <linearGradient
-                      id="qualityGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopOpacity={0.35} />
-                      <stop offset="100%" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+        <BatchOverview />
 
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} />
-
-                  <XAxis dataKey="name" />
-
-                  <YAxis domain={[0, 100]} />
-
-                  <Tooltip />
-
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    strokeWidth={3}
-                    fill="url(#qualityGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="panel pipeline-panel">
-            <div className="panel-header">
-              <div>
-                <span className="panel-label">PROCESSING PIPELINE</span>
-                <h3>Inspection Flow</h3>
-              </div>
-            </div>
-
-            <div className="pipeline">
-              <div className="pipeline-step complete">
-                <span>01</span>
-                <div>
-                  <strong>Image Quality Assessment</strong>
-                  <small>60.67 → 83.75</small>
-                </div>
-              </div>
-
-              <div className="pipeline-line"></div>
-
-              <div className="pipeline-step complete">
-                <span>02</span>
-                <div>
-                  <strong>Adaptive Calibration</strong>
-                  <small>Brightness • CLAHE • Denoising</small>
-                </div>
-              </div>
-
-              <div className="pipeline-line"></div>
-
-              <div className="pipeline-step complete">
-                <span>03</span>
-                <div>
-                  <strong>AI Crack Detection</strong>
-                  <small>YOLO inspection model</small>
-                </div>
-              </div>
-
-              <div className="pipeline-line"></div>
-
-              <div className="pipeline-step complete">
-                <span>04</span>
-                <div>
-                  <strong>Reliability Assessment</strong>
-                  <small>64.31 / 100</small>
-                </div>
-              </div>
-
-              <div className="pipeline-line"></div>
-
-              <div className="pipeline-step complete">
-                <span>05</span>
-                <div>
-                  <strong>Track Condition Index</strong>
-                  <small>68.64 / 100 • FAIR</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <footer>
-          <span>Railway Track Health Monitoring System</span>
-          <span>AI / ML • Computer Vision • Reliability Intelligence</span>
-        </footer>
+        <InspectionHistoryTable
+          activeId={selectedInspection?.id}
+          onSelectInspection={setSelectedInspection}
+        />
       </main>
+
+      <Footer />
     </div>
   );
 }
