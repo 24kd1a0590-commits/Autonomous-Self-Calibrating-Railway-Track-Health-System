@@ -1,7 +1,7 @@
 import React from 'react';
-import { TrainFront, ShieldCheck, Sparkles, BrainCircuit } from 'lucide-react';
+import { TrainFront, ShieldCheck, Sparkles, BrainCircuit, Play, History, Activity } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ activeMode, onSwitchMode, backendOnline }) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -16,6 +16,21 @@ export default function Header() {
       </div>
 
       <div className="topbar-right">
+        <div className="mode-switcher-container">
+          <button 
+            className={`mode-tab-btn ${activeMode === 'LIVE' ? 'active' : ''}`}
+            onClick={() => onSwitchMode('LIVE')}
+          >
+            <Play size={14} /> LIVE INSPECTION
+          </button>
+          <button 
+            className={`mode-tab-btn ${activeMode === 'HISTORY' ? 'active' : ''}`}
+            onClick={() => onSwitchMode('HISTORY')}
+          >
+            <History size={14} /> INSPECTION HISTORY
+          </button>
+        </div>
+
         <div className="concept-pills">
           <span className="pill">
             <BrainCircuit size={14} /> AI INSPECTION
@@ -28,9 +43,9 @@ export default function Header() {
           </span>
         </div>
 
-        <div className="system-status">
+        <div className={`system-status ${backendOnline ? 'online' : 'offline'}`}>
           <span className="status-dot"></span>
-          <span className="status-text">SYSTEM ONLINE</span>
+          <span className="status-text">{backendOnline ? 'API ONLINE' : 'API DISCONNECTED'}</span>
         </div>
       </div>
     </header>
