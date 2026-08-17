@@ -1,88 +1,84 @@
 import React from 'react';
-import { Sparkles, ArrowDown, CheckCircle2, Sliders, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function SelfCalibrationPanel({ data }) {
   if (!data) return null;
 
+  const qBefore = (data.quality_before ?? 0).toFixed(1);
+  const qAfter = (data.quality_after ?? 0).toFixed(1);
+
+  // Extract compact technique names from data.calibration_operations (e.g. CLAHE, DENOISING, BRIGHTNESS)
+  const rawOps = data.calibration_operations || [];
+  let tags = [];
+
+  if (rawOps.length === 0) {
+    tags = ['OPTIMAL RAW'];
+  } else {
+    rawOps.forEach(op => {
+      const lower = op.toLowerCase();
+      if (lower.includes('clahe')) tags.push('CLAHE');
+      if (lower.includes('denois')) tags.push('DENOISING');
+      if (lower.includes('bright') || lower.includes('contrast')) tags.push('BRIGHTNESS');
+      if (lower.includes('sharp')) tags.push('SHARPENING');
+    });
+    if (tags.length === 0) tags = ['ADAPTIVE CALIBRATION'];
+  }
+
+  // Deduplicate tags
+  tags = Array.from(new Set(tags));
+
+  const originalImg = data.image_urls?.original;
+  const calibratedImg = data.image_urls?.calibrated || data.image_urls?.original;
+
   return (
-    <div className="panel calibration-panel">
-      <div className="panel-header">
-        <div>
-          <span className="panel-label">DYNAMIC PRE-PROCESSING</span>
-          <h3>SELF-CALIBRATION INTELLIGENCE</h3>
-        </div>
-        <div className="status-pill cyan">
-          <Sparkles size={14} /> ADAPTIVE PIPELINE
-        </div>
-      </div>
+    <div className="panel visual-calibration-panel">
+      <div className="panel-micro-title">SELF-CALIBRATION</div>
 
-      <div className="calibration-flow">
-        <div className="flow-step quality-before-step">
-          <span className="step-label">QUALITY BEFORE</span>
-          <div className="quality-value text-muted">{data.quality_before.toFixed(2)}</div>
-          <span className="quality-sub">Initial Assessment</span>
-        </div>
-
-        <div className="flow-arrow">
-          <ArrowDown size={20} className="arrow-icon" />
-        </div>
-
-        <div className="flow-step operations-step">
-          <div className="ops-header">
-            <Sliders size={15} />
-            <span>ADAPTIVE CALIBRATION OPERATIONS</span>
-          </div>
-
-          <div className="ops-list">
-            {data.calibration_operations && data.calibration_operations.length > 0 ? (
-              data.calibration_operations.map((op, idx) => (
-                <div key={idx} className="op-tag">
-                  <span className="op-bullet"></span>
-                  {op}
-                </div>
-              ))
+      <div className="before-after-visual-container">
+        {/* BEFORE BOX */}
+        <div className="comparison-box">
+          <span className="box-badge badge-muted">BEFORE</span>
+          <div className="img-frame-thumb">
+            {originalImg ? (
+              <img src={originalImg} alt="Original Raw Track" />
             ) : (
-              <div className="op-tag">None (Quality Optimal)</div>
+              <div className="thumb-placeholder">RAW</div>
             )}
           </div>
         </div>
 
-        <div className="flow-arrow">
-          <ArrowDown size={20} className="arrow-icon" />
+        <div className="arrow-connector-middle">
+          <ArrowRight size={20} className="arrow-icon-cyan" />
         </div>
 
-        <div className="flow-step quality-after-step">
-          <span className="step-label">QUALITY AFTER</span>
-          <div className="quality-value text-cyan">{data.quality_after.toFixed(2)}</div>
-          <span className="quality-sub">Post-Calibration Score</span>
-        </div>
-      </div>
-
-      <div className="calibration-metrics-row">
-        <div className="cal-metric">
-          <span className="cal-metric-label">Quality Improvement</span>
-          <strong className={data.quality_gain > 0 ? "text-cyan" : "text-muted"}>
-            {data.quality_gain > 0 ? `+${data.quality_gain.toFixed(2)}` : "0.00"}
-          </strong>
-        </div>
-
-        <div className="cal-metric">
-          <span className="cal-metric-label">Detection Stability</span>
-          <strong className="text-emerald">{data.stability_pct}%</strong>
-        </div>
-
-        <div className="cal-metric">
-          <span className="cal-metric-label">Calibration Status</span>
-          <strong className="text-blue">
-            {data.quality_gain > 0 ? "CALIBRATED & VERIFIED" : "OPTIMAL QUALITY"}
-          </strong>
+        {/* AFTER BOX */}
+        <div className="comparison-box">
+          <span className="box-badge badge-cyan">AFTER</span>
+          <div className="img-frame-thumb glow-border-cyan">
+            {calibratedImg ? (
+              <img src={calibratedImg} alt="Calibrated Track" />
+            ) : (
+              <div className="thumb-placeholder">CALIBRATED</div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="panel-footer-note">
-        <ShieldCheck size={14} />
-        <span>System dynamically selects enhancement operations based on image quality deficits instead of applying static filters.</span>
+      <div className="quality-transition-row">
+        <span className="q-label">Quality:</span>
+        <span className="q-before-num">{qBefore}</span>
+        <ArrowRight size={14} className="q-arrow" />
+        <span className="q-after-num text-cyan">{qAfter}</span>
+      </div>
+
+      <div className="calibration-tech-tags">
+        {tags.map((tag, idx) => (
+          <span key={idx} className="tech-tag">
+            {tag}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
+

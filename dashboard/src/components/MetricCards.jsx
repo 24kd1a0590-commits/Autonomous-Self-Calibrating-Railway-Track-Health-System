@@ -1,77 +1,67 @@
 import React from 'react';
-import { Gauge, ShieldCheck, Activity, AlertTriangle, TrendingUp } from 'lucide-react';
-
-function MetricCard({ icon: Icon, title, value, badgeText, badgeColor, subtext, highlight }) {
-  return (
-    <div className={`metric-card ${highlight ? 'highlight-border' : ''}`}>
-      <div className="metric-header">
-        <div className="metric-icon-wrap">
-          <Icon size={20} />
-        </div>
-        {badgeText && (
-          <span className={`metric-badge badge-${badgeColor || 'neutral'}`}>
-            {badgeText}
-          </span>
-        )}
-      </div>
-
-      <div className="metric-body">
-        <span className="metric-title">{title}</span>
-        <div className="metric-value">{value}</div>
-        {subtext && <div className="metric-subtext">{subtext}</div>}
-      </div>
-    </div>
-  );
-}
+import { ArrowUpRight } from 'lucide-react';
 
 export default function MetricCards({ data }) {
   if (!data) return null;
 
-  const thiColor = data.condition === 'CRITICAL' ? 'red' : 
-                   data.condition === 'POOR' ? 'amber' : 
-                   data.condition === 'GOOD' ? 'green' : 'blue';
+  const qualityAfter = (data.quality_after ?? 0).toFixed(1);
+  const qualityGain = data.quality_gain ?? 0;
 
-  const relColor = data.reliability >= 75 ? 'cyan' : data.reliability >= 50 ? 'amber' : 'red';
-  const defectColor = data.defects > 0 ? 'red' : 'green';
+  const relScore = (data.reliability ?? 0).toFixed(1);
+  const relStatus = (data.reliability_status || 'HIGH').toUpperCase();
+
+  const defectsCount = data.defects ?? 0;
+
+  const thiScore = (data.thi ?? 0).toFixed(1);
+  const condition = (data.condition || 'POOR').toUpperCase();
+
+  const relBadgeClass = data.reliability >= 75 ? 'badge-good' : data.reliability >= 50 ? 'badge-warning' : 'badge-critical';
+  const defectBadgeClass = defectsCount > 0 ? 'badge-critical' : 'badge-good';
+  const thiBadgeClass = data.thi >= 75 ? 'badge-good' : data.thi >= 40 ? 'badge-warning' : 'badge-critical';
 
   return (
-    <section className="metrics-grid">
-      <MetricCard
-        icon={Gauge}
-        title="TRACK HEALTH INDEX"
-        value={`${data.thi.toFixed(2)} / 100`}
-        badgeText={data.condition}
-        badgeColor={thiColor}
-        subtext={`Risk Level: ${data.risk_level}`}
-        highlight={true}
-      />
+    <section className="four-result-cards-grid">
+      {/* 1. IMAGE QUALITY */}
+      <div className="major-result-card">
+        <span className="card-micro-label">IMAGE QUALITY</span>
+        <div className="card-main-number text-cyan">{qualityAfter}</div>
+        <div className="card-indicator-pill pill-cyan">
+          <ArrowUpRight size={13} />
+          <span>{qualityGain > 0 ? `+${qualityGain.toFixed(1)}` : '0.0'}</span>
+        </div>
+      </div>
 
-      <MetricCard
-        icon={ShieldCheck}
-        title="INSPECTION RELIABILITY"
-        value={`${data.reliability.toFixed(2)} / 100`}
-        badgeText={data.reliability_status}
-        badgeColor={relColor}
-        subtext={data.is_trustworthy ? "● Trustworthy Assessment" : "▲ Review Required"}
-      />
+      {/* 2. RELIABILITY */}
+      <div className="major-result-card">
+        <span className="card-micro-label">RELIABILITY</span>
+        <div className="card-main-number text-white">{relScore}</div>
+        <div className={`card-status-tag ${relBadgeClass}`}>
+          {relStatus}
+        </div>
+      </div>
 
-      <MetricCard
-        icon={Activity}
-        title="IMAGE QUALITY"
-        value={`${data.quality_before.toFixed(2)} → ${data.quality_after.toFixed(2)}`}
-        badgeText={data.quality_gain > 0 ? `+${data.quality_gain.toFixed(2)}` : "Optimal"}
-        badgeColor={data.quality_gain > 0 ? "cyan" : "neutral"}
-        subtext={data.quality_gain > 0 ? `+${data.quality_gain.toFixed(2)} quality improvement` : "No calibration needed"}
-      />
+      {/* 3. DEFECTS */}
+      <div className="major-result-card">
+        <span className="card-micro-label">DEFECTS</span>
+        <div className={`card-main-number ${defectsCount > 0 ? 'text-ruby' : 'text-emerald'}`}>
+          {defectsCount}
+        </div>
+        <div className={`card-status-tag ${defectBadgeClass}`}>
+          {defectsCount > 0 ? 'DETECTED' : 'CLEAN'}
+        </div>
+      </div>
 
-      <MetricCard
-        icon={AlertTriangle}
-        title="DEFECTS DETECTED"
-        value={data.defects}
-        badgeText={data.defects > 0 ? data.defect_type.toUpperCase() : "NO DEFECTS"}
-        badgeColor={defectColor}
-        subtext={data.defects > 0 ? `Confidence: ${(data.confidence * 100).toFixed(1)}%` : "Track surface clear"}
-      />
+      {/* 4. TRACK HEALTH */}
+      <div className="major-result-card">
+        <span className="card-micro-label">TRACK HEALTH</span>
+        <div className={`card-main-number ${data.thi >= 75 ? 'text-emerald' : data.thi >= 40 ? 'text-amber' : 'text-ruby'}`}>
+          {thiScore}
+        </div>
+        <div className={`card-status-tag ${thiBadgeClass}`}>
+          {condition}
+        </div>
+      </div>
     </section>
   );
 }
+

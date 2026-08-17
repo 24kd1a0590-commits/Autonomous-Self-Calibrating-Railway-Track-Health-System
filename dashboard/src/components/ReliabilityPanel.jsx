@@ -1,20 +1,17 @@
 import React from 'react';
-import { ShieldCheck, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
-function ComponentBar({ label, value, max = 100, color = "blue", suffix = "" }) {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+function HorizontalBar({ label, value, color = "cyan" }) {
+  const clampedVal = Math.min(100, Math.max(0, value));
   return (
-    <div className="comp-bar-item">
-      <div className="comp-bar-labels">
-        <span className="comp-name">{label}</span>
-        <span className="comp-val">{value.toFixed(1)}{suffix}</span>
-      </div>
-      <div className="comp-track">
+    <div className="compact-bar-row">
+      <span className="bar-label">{label}</span>
+      <div className="bar-track">
         <div 
-          className={`comp-fill fill-${color}`} 
-          style={{ width: `${pct}%` }}
+          className={`bar-fill bar-${color}`}
+          style={{ width: `${clampedVal}%` }}
         ></div>
       </div>
+      <span className="bar-num font-mono">{clampedVal.toFixed(0)}</span>
     </div>
   );
 }
@@ -22,89 +19,41 @@ function ComponentBar({ label, value, max = 100, color = "blue", suffix = "" }) 
 export default function ReliabilityPanel({ data }) {
   if (!data) return null;
 
+  const reliabilityScore = Math.round(data.reliability ?? 0);
+  const statusText = (data.reliability_status || (reliabilityScore >= 75 ? 'HIGH TRUST' : reliabilityScore >= 50 ? 'MODERATE' : 'LOW TRUST')).toUpperCase();
+
   const comps = data.components || {
-    quality_component: data.quality_after,
-    quality_gain_component: Math.min(100, Math.max(0, 50 + data.quality_gain * 2.5)),
-    stability_component: data.stability_pct,
-    confidence_component: data.defects > 0 ? data.confidence * 100 : 50,
+    quality_component: data.quality_after ?? 80,
+    quality_gain_component: Math.min(100, Math.max(0, 50 + (data.quality_gain ?? 0) * 4)),
+    stability_component: data.stability_pct ?? 90,
+    confidence_component: data.defects > 0 ? (data.confidence ?? 0.85) * 100 : 80,
     degradation_penalty: 0
   };
 
-  const statusColor = data.reliability >= 75 ? 'emerald' : data.reliability >= 50 ? 'amber' : 'ruby';
+  const trustTagColor = reliabilityScore >= 75 ? 'badge-good' : reliabilityScore >= 50 ? 'badge-warning' : 'badge-critical';
 
   return (
-    <div className="panel reliability-panel">
-      <div className="panel-header">
-        <div>
-          <span className="panel-label">MULTI-FACTOR TRUST ASSESSMENT</span>
-          <h3>INSPECTION RELIABILITY INTELLIGENCE</h3>
-        </div>
-        <div className={`status-pill ${statusColor}`}>
-          <ShieldCheck size={14} /> RELIABILITY: {data.reliability_status}
-        </div>
-      </div>
+    <div className="panel visual-reliability-panel">
+      <div className="panel-micro-title">INSPECTION RELIABILITY</div>
 
-      <div className="reliability-top-summary">
-        <div className="score-ring-box">
-          <div className="big-score-display">
-            <span className="score-num">{data.reliability.toFixed(2)}</span>
-            <span className="score-denom">/ 100</span>
-          </div>
-          <span className="score-caption">RELIABILITY SCORE</span>
+      <div className="reliability-score-header">
+        <div className="rel-score-large-wrap">
+          <span className="rel-score-num text-white">{reliabilityScore}</span>
+          <span className="rel-score-denom">/ 100</span>
         </div>
-
-        <div className="trust-indicator-box">
-          <div className="trust-status-row">
-            <span className="trust-label">System Trustworthiness:</span>
-            <strong className={data.is_trustworthy ? "text-emerald" : "text-ruby"}>
-              {data.is_trustworthy ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-              {data.is_trustworthy ? "TRUSTWORTHY (TRUE)" : "UNTRUSTWORTHY (FALSE)"}
-            </strong>
-          </div>
-          <p className="trust-explanation">
-            Calculated by weighing post-calibration image quality, calibration gain, bounding box IoU stability across frames, and defect confidence.
-          </p>
+        <div className={`rel-status-badge ${trustTagColor}`}>
+          {statusText.includes('TRUST') ? statusText : `${statusText} TRUST`}
         </div>
       </div>
 
-      <div className="reliability-components">
-        <h4 className="comp-title">INSPECTION RELIABILITY COMPONENTS</h4>
-
-        <div className="comp-grid">
-          <ComponentBar 
-            label="Image Quality Component" 
-            value={comps.quality_component} 
-            color="cyan" 
-          />
-          <ComponentBar 
-            label="Quality Gain Component" 
-            value={comps.quality_gain_component} 
-            color="blue" 
-          />
-          <ComponentBar 
-            label="Detection Stability" 
-            value={comps.stability_component} 
-            color="emerald" 
-            suffix="%"
-          />
-          <ComponentBar 
-            label="Model Confidence" 
-            value={comps.confidence_component} 
-            color="purple" 
-            suffix="%"
-          />
-          <ComponentBar 
-            label="Degradation Penalty" 
-            value={comps.degradation_penalty} 
-            color="ruby" 
-          />
-        </div>
-      </div>
-
-      <div className="research-disclaimer-box">
-        <Info size={14} />
-        <span>Prototype engineering reliability score — not an official railway safety limit.</span>
+      <div className="compact-breakdown-list">
+        <HorizontalBar label="QUALITY" value={comps.quality_component ?? 0} color="cyan" />
+        <HorizontalBar label="GAIN" value={comps.quality_gain_component ?? 0} color="blue" />
+        <HorizontalBar label="STABILITY" value={comps.stability_component ?? 0} color="emerald" />
+        <HorizontalBar label="CONFIDENCE" value={comps.confidence_component ?? 0} color="purple" />
+        <HorizontalBar label="PENALTY" value={comps.degradation_penalty ?? 0} color="ruby" />
       </div>
     </div>
   );
 }
+

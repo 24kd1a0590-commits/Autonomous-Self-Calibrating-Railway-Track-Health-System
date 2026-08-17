@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import HeroSection from "./components/HeroSection";
-import MetricCards from "./components/MetricCards";
 import LiveUploadPanel from "./components/LiveUploadPanel";
-import PipelineProgressModal from "./components/PipelineProgressModal";
-import MainInspectionView from "./components/MainInspectionView";
+import CompletePipeline from "./components/CompletePipeline";
+import MetricCards from "./components/MetricCards";
 import SelfCalibrationPanel from "./components/SelfCalibrationPanel";
 import ReliabilityPanel from "./components/ReliabilityPanel";
-import TrackHealthGauge from "./components/TrackHealthGauge";
 import DefectDetectionPanel from "./components/DefectDetectionPanel";
 import DecisionSupportPanel from "./components/DecisionSupportPanel";
-import CompletePipeline from "./components/CompletePipeline";
-import WhySelfCalibration from "./components/WhySelfCalibration";
 import BatchOverview from "./components/BatchOverview";
 import InspectionHistoryTable from "./components/InspectionHistoryTable";
 import Footer from "./components/Footer";
@@ -29,7 +25,7 @@ function App() {
 
   const [backendOnline, setBackendOnline] = useState(false);
   const [isInspecting, setIsInspecting] = useState(false);
-  const [activeStageIndex, setActiveStageIndex] = useState(0);
+  const [activeStageIndex, setActiveStageIndex] = useState(8);
   const [uploadError, setUploadError] = useState(null);
 
   // Check backend health on mount and periodically
@@ -60,7 +56,7 @@ function App() {
     setIsInspecting(true);
     setActiveStageIndex(0);
 
-    // Animate stage progress while request completes
+    // Animate 9-stage node progress while request executes
     const stageTimer = setInterval(() => {
       setActiveStageIndex((prev) => (prev < 8 ? prev + 1 : prev));
     }, 450);
@@ -84,11 +80,10 @@ function App() {
 
       const liveResult = await response.json();
 
-      // Brief delay to finish showing 9th stage completion animation
       setTimeout(() => {
         setIsInspecting(false);
         setSelectedInspection(liveResult);
-      }, 500);
+      }, 300);
 
     } catch (err) {
       clearInterval(stageTimer);
@@ -106,68 +101,58 @@ function App() {
       />
 
       <main className="dashboard-body">
+        {/* Top Hero with THI Radial Gauge */}
         <HeroSection activeInspection={selectedInspection} />
 
-        {/* Live Upload Panel visible in LIVE mode */}
-        {activeMode === "LIVE" && (
-          <LiveUploadPanel
-            backendOnline={backendOnline}
-            isInspecting={isInspecting}
-            onRunInspection={handleRunLiveInspection}
-            uploadError={uploadError}
-          />
-        )}
+        {activeMode === "LIVE" ? (
+          <>
+            {/* 1. Main Action: Image Upload & View Area */}
+            <LiveUploadPanel
+              backendOnline={backendOnline}
+              isInspecting={isInspecting}
+              onRunInspection={handleRunLiveInspection}
+              uploadError={uploadError}
+              activeInspection={selectedInspection}
+            />
 
-        <MetricCards data={selectedInspection} />
+            {/* 2. Visual 9-Stage Node Pipeline directly below image */}
+            <CompletePipeline 
+              data={selectedInspection} 
+              isInspecting={isInspecting} 
+              activeStageIndex={activeStageIndex} 
+            />
 
-        <section className="dashboard-grid grid-2col">
-          <MainInspectionView data={selectedInspection} />
-          <SelfCalibrationPanel data={selectedInspection} />
-        </section>
+            {/* 3. Four Main Result Cards Only */}
+            <MetricCards data={selectedInspection} />
 
-        <section className="dashboard-grid grid-2col">
-          <ReliabilityPanel data={selectedInspection} />
-          <TrackHealthGauge data={selectedInspection} />
-        </section>
+            {/* 4. Self-Calibration & Reliability Grid */}
+            <section className="control-grid-2col">
+              <SelfCalibrationPanel data={selectedInspection} />
+              <ReliabilityPanel data={selectedInspection} />
+            </section>
 
-        <section className="dashboard-grid grid-2col">
-          <DefectDetectionPanel data={selectedInspection} />
-          <DecisionSupportPanel data={selectedInspection} />
-        </section>
-
-        <CompletePipeline data={selectedInspection} />
-
-        <WhySelfCalibration />
-
-        {/* Batch Overview & Inspection History Table in HISTORY mode */}
-        {activeMode === "HISTORY" ? (
+            {/* 5. AI Defect Detection & Decision Support Grid */}
+            <section className="control-grid-2col">
+              <DefectDetectionPanel data={selectedInspection} />
+              <DecisionSupportPanel data={selectedInspection} />
+            </section>
+          </>
+        ) : (
+          /* HISTORY MODE */
           <>
             <BatchOverview />
             <InspectionHistoryTable
               activeId={selectedInspection?.id}
-              onSelectInspection={setSelectedInspection}
+              onSelectInspection={(item) => {
+                setSelectedInspection(item);
+                setActiveMode("LIVE");
+              }}
             />
           </>
-        ) : (
-          <section className="history-preview-bar">
-            <div className="history-preview-card">
-              <span>EXPLORE TEST DATASET</span>
-              <p>Switch to <strong>INSPECTION HISTORY</strong> mode to view batch statistics and all 85 processed test dataset images.</p>
-              <button className="btn-switch-history" onClick={() => setActiveMode("HISTORY")}>
-                View 85-Image Dataset History
-              </button>
-            </div>
-          </section>
         )}
       </main>
 
       <Footer />
-
-      {/* Animated 9-stage pipeline progress modal */}
-      <PipelineProgressModal 
-        isOpen={isInspecting} 
-        activeStageIndex={activeStageIndex} 
-      />
     </div>
   );
 }

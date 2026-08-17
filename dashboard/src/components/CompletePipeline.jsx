@@ -2,130 +2,71 @@ import React from 'react';
 import { 
   Camera, 
   Activity, 
-  Sparkles, 
+  Sliders, 
   Scan, 
   Layers, 
   ShieldCheck, 
   Gauge, 
   ShieldAlert, 
-  Wrench 
+  Wrench,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 
-export default function CompletePipeline({ data }) {
+export default function CompletePipeline({ data, isInspecting, activeStageIndex = 8 }) {
   if (!data) return null;
 
-  const steps = [
-    {
-      id: "01",
-      icon: Camera,
-      title: "IMAGE INPUT",
-      desc: "Raw railway track image ingestion",
-      metric: data.shortName,
-      status: "COMPLETED"
-    },
-    {
-      id: "02",
-      icon: Activity,
-      title: "IMAGE QUALITY ASSESSMENT",
-      desc: "Evaluates sharpness, noise & contrast",
-      metric: `Q-Before: ${data.quality_before.toFixed(1)}`,
-      status: "COMPLETED"
-    },
-    {
-      id: "03",
-      icon: Sparkles,
-      title: "ADAPTIVE SELF-CALIBRATION",
-      desc: "Dynamic enhancement parameter selection",
-      metric: data.quality_gain > 0 ? `+${data.quality_gain.toFixed(2)} Gain` : "Optimal",
-      status: "COMPLETED"
-    },
-    {
-      id: "04",
-      icon: Scan,
-      title: "AI DEFECT DETECTION",
-      desc: "YOLO crack & gap inference",
-      metric: `${data.defects} Defect(s)`,
-      status: "COMPLETED"
-    },
-    {
-      id: "05",
-      icon: Layers,
-      title: "DETECTION STABILITY",
-      desc: "Raw vs calibrated IoU consistency",
-      metric: `${data.stability_pct}% IoU`,
-      status: "COMPLETED"
-    },
-    {
-      id: "06",
-      icon: ShieldCheck,
-      title: "INSPECTION RELIABILITY",
-      desc: "Multi-factor objective trust score",
-      metric: `${data.reliability.toFixed(1)} / 100`,
-      status: "COMPLETED"
-    },
-    {
-      id: "07",
-      icon: Gauge,
-      title: "TRACK HEALTH INDEX",
-      desc: "Integrated track condition scoring",
-      metric: `THI: ${data.thi.toFixed(1)} (${data.condition})`,
-      status: "COMPLETED"
-    },
-    {
-      id: "08",
-      icon: ShieldAlert,
-      title: "RISK ASSESSMENT",
-      desc: "Severity & risk level classification",
-      metric: `${data.risk_level} RISK`,
-      status: "COMPLETED"
-    },
-    {
-      id: "09",
-      icon: Wrench,
-      title: "DECISION SUPPORT",
-      desc: "Actionable maintenance recommendation",
-      metric: data.priority,
-      status: "COMPLETED"
-    }
+  const thi = data.thi ?? 0;
+  const risk = (data.risk_level || 'LOW').toUpperCase();
+
+  const stages = [
+    { id: "01", label: "INPUT", icon: Camera, status: "good" },
+    { id: "02", label: "QUALITY", icon: Activity, status: "good" },
+    { id: "03", label: "CALIBRATION", icon: Sliders, status: data.quality_gain > 0 ? "cyan" : "good" },
+    { id: "04", label: "DETECTION", icon: Scan, status: data.defects > 0 ? "warning" : "good" },
+    { id: "05", label: "STABILITY", icon: Layers, status: data.stability_pct >= 80 ? "good" : "warning" },
+    { id: "06", label: "RELIABILITY", icon: ShieldCheck, status: data.reliability >= 75 ? "good" : data.reliability >= 50 ? "warning" : "critical" },
+    { id: "07", label: "THI", icon: Gauge, status: thi >= 75 ? "good" : thi >= 40 ? "warning" : "critical" },
+    { id: "08", label: "RISK", icon: ShieldAlert, status: risk === 'LOW' ? "good" : risk === 'MEDIUM' ? "warning" : "critical" },
+    { id: "09", label: "ACTION", icon: Wrench, status: risk === 'LOW' ? "good" : risk === 'MEDIUM' ? "warning" : "critical" }
   ];
 
   return (
-    <div className="panel pipeline-full-panel">
-      <div className="panel-header">
-        <div>
-          <span className="panel-label">END-TO-END SYSTEM ARCHITECTURE</span>
-          <h3>COMPLETE INSPECTION & DECISION PIPELINE</h3>
-        </div>
-        <div className="status-pill cyan">
-          <span>9-STAGE PIPELINE ACTIVE</span>
-        </div>
+    <div className="panel visual-pipeline-panel">
+      <div className="pipeline-header-bar">
+        <span className="pipeline-label">AUTONOMOUS 9-STAGE PIPELINE ARCHITECTURE</span>
       </div>
 
-      <div className="pipeline-steps-grid">
-        {steps.map((step, idx) => {
-          const IconComp = step.icon;
-          return (
-            <React.Fragment key={step.id}>
-              <div className="pipeline-card-step">
-                <div className="step-top-row">
-                  <span className="step-num">{step.id}</span>
-                  <div className="step-icon-bg">
-                    <IconComp size={18} />
-                  </div>
-                </div>
+      <div className="pipeline-horizontal-nodes">
+        {stages.map((stage, idx) => {
+          const IconComp = stage.icon;
+          const isDone = !isInspecting || idx <= activeStageIndex;
+          const isCurrent = isInspecting && idx === activeStageIndex;
 
-                <div className="step-content">
-                  <h4 className="step-title">{step.title}</h4>
-                  <p className="step-desc">{step.desc}</p>
-                  <div className="step-metric-badge">
-                    {step.metric}
-                  </div>
+          let statusClass = "node-good";
+          if (stage.status === "warning") statusClass = "node-warning";
+          if (stage.status === "critical") statusClass = "node-critical";
+          if (stage.status === "cyan") statusClass = "node-cyan";
+
+          return (
+            <React.Fragment key={stage.id}>
+              <div className={`pipeline-node-item ${isCurrent ? 'node-active-pulse' : ''} ${statusClass}`}>
+                <div className="node-circle-icon">
+                  {isDone && !isCurrent ? (
+                    <Check size={14} className="check-icon" />
+                  ) : (
+                    <IconComp size={15} />
+                  )}
+                </div>
+                <div className="node-label-wrap">
+                  <span className="node-id">{stage.id}</span>
+                  <span className="node-name">{stage.label}</span>
                 </div>
               </div>
 
-              {idx < steps.length - 1 && (
-                <div className="pipeline-connector">
-                  <div className="connector-line"></div>
+              {idx < stages.length - 1 && (
+                <div className="pipeline-node-connector">
+                  <ChevronRight size={14} className="connector-arrow" />
                 </div>
               )}
             </React.Fragment>
@@ -135,3 +76,4 @@ export default function CompletePipeline({ data }) {
     </div>
   );
 }
+

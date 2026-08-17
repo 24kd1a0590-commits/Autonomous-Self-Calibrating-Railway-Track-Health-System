@@ -1,50 +1,36 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, Play, RefreshCw, AlertCircle, CheckCircle2, FileText, Activity } from 'lucide-react';
+import { UploadCloud, Play, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
 
-export default function LiveUploadPanel({ backendOnline, isInspecting, onRunInspection, uploadError }) {
+export default function LiveUploadPanel({ 
+  backendOnline, 
+  isInspecting, 
+  onRunInspection, 
+  uploadError,
+  activeInspection,
+  onSwitchImageMode
+}) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [imageSpecs, setImageSpecs] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [activeTab, setActiveTab] = useState('RESULT'); // 'ORIGINAL' | 'CALIBRATED' | 'RESULT'
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (file) => {
     if (!file) return;
 
-    // Validate type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type)) {
-      alert("Invalid file format. Please upload a JPG, JPEG, or PNG railway track image.");
+      alert("Invalid format. Upload JPG or PNG railway track image.");
       return;
     }
 
     setSelectedFile(file);
 
-    // Read preview and dimensions
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
-      const img = new Image();
-      img.onload = () => {
-        setImageSpecs({
-          width: img.width,
-          height: img.height,
-          sizeKB: (file.size / 1024).toFixed(1)
-        });
-      };
-      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setDragOver(false);
   };
 
   const handleDrop = (e) => {
@@ -58,7 +44,6 @@ export default function LiveUploadPanel({ backendOnline, isInspecting, onRunInsp
   const handleClear = () => {
     setSelectedFile(null);
     setImagePreview(null);
-    setImageSpecs(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -67,142 +52,139 @@ export default function LiveUploadPanel({ backendOnline, isInspecting, onRunInsp
     onRunInspection(selectedFile);
   };
 
+  // Determine current display image:
+  // If user uploaded a new image preview before running inspection -> show preview
+  // Else if activeInspection exists -> show corresponding image url from tabs
+  const currentDisplayedImage = selectedFile && imagePreview
+    ? imagePreview
+    : activeInspection?.image_urls
+    ? (activeTab === 'ORIGINAL' ? activeInspection.image_urls.original :
+       activeTab === 'CALIBRATED' ? activeInspection.image_urls.calibrated :
+       activeInspection.image_urls.annotated)
+    : null;
+
   return (
-    <div className="panel live-upload-panel">
-      <div className="panel-header">
-        <div>
-          <span className="panel-label">REAL-TIME INSPECTION WORKFLOW</span>
-          <h3>LIVE TRACK INSPECTION</h3>
-          <span className="panel-subtitle">Upload railway image for autonomous health assessment</span>
-        </div>
-
-        <div className={`status-pill ${backendOnline ? 'emerald' : 'amber'}`}>
-          <Activity size={14} />
-          {backendOnline ? '● BACKEND SERVICE ONLINE' : '▲ DISCONNECTED (START APP.PY)'}
-        </div>
-      </div>
-
-      {!backendOnline && (
-        <div className="backend-offline-alert">
-          <AlertCircle size={18} />
-          <div>
-            <strong>Inspection Service Offline:</strong> Please start the Python API server by running <code>python app.py</code> at <code>http://127.0.0.1:8000</code>.
-          </div>
-        </div>
-      )}
-
+    <div className="panel live-inspection-upload-panel">
       {uploadError && (
-        <div className="upload-error-alert">
-          <AlertCircle size={18} />
+        <div className="upload-error-banner">
+          <AlertCircle size={16} />
           <span>{uploadError}</span>
         </div>
       )}
 
-      <div className="upload-workspace-grid">
-        <div 
-          className={`dropzone-box ${dragOver ? 'drag-over' : ''} ${imagePreview ? 'has-preview' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => !imagePreview && fileInputRef.current?.click()}
-        >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            accept="image/jpeg, image/jpg, image/png"
-            style={{ display: 'none' }}
-            onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
-          />
+      <div className="upload-control-header">
+        <div className="view-mode-tabs-bar">
+          <button 
+            className={`tab-btn ${activeTab === 'ORIGINAL' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('ORIGINAL'); if (onSwitchImageMode) onSwitchImageMode('ORIGINAL'); }}
+          >
+            ORIGINAL
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'CALIBRATED' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('CALIBRATED'); if (onSwitchImageMode) onSwitchImageMode('CALIBRATED'); }}
+          >
+            CALIBRATED
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'RESULT' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('RESULT'); if (onSwitchImageMode) onSwitchImageMode('RESULT'); }}
+          >
+            RESULT
+          </button>
+        </div>
 
-          {!imagePreview ? (
-            <div className="dropzone-content">
-              <div className="upload-icon-bg">
-                <UploadCloud size={36} />
-              </div>
-              <h4>Drag & Drop Railway Image Here</h4>
-              <p>Supports JPG, JPEG, PNG format</p>
+        <div className="upload-action-buttons">
+          {selectedFile && (
+            <button 
+              className="btn-clear-action" 
+              onClick={handleClear}
+              disabled={isInspecting}
+            >
+              CLEAR
+            </button>
+          )}
+
+          <button 
+            className="btn-run-inspection"
+            onClick={handleRun}
+            disabled={!selectedFile || isInspecting || !backendOnline}
+          >
+            {isInspecting ? (
+              <>
+                <RefreshCw size={16} className="spin-icon" /> RUNNING...
+              </>
+            ) : (
+              <>
+                <Play size={16} /> RUN INSPECTION
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="main-display-area">
+        {/* Large Upload Dropzone when no file selected and no image URL */}
+        {!selectedFile && !currentDisplayedImage ? (
+          <div 
+            className={`dropzone-box-large ${dragOver ? 'drag-over' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={(e) => { e.preventDefault(); setDragOver(false); }}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/jpeg, image/jpg, image/png"
+              style={{ display: 'none' }}
+              onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+            />
+            <div className="dropzone-inner">
+              <UploadCloud size={48} className="upload-icon-cyan" />
+              <h3>DROP RAILWAY IMAGE HERE</h3>
               <button 
                 type="button" 
-                className="btn-choose-file"
+                className="btn-upload-trigger"
                 onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
               >
-                Choose Image
+                Upload Image
               </button>
+              <span className="file-format-hint">JPG / PNG</span>
             </div>
-          ) : (
-            <div className="preview-content">
-              <img src={imagePreview} alt="Selected Preview" className="preview-image" />
-              <div className="preview-overlay-tag">
-                <CheckCircle2 size={14} /> IMAGE LOADED & READY
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="upload-details-card">
-          <div className="details-header">
-            <FileText size={16} className="text-cyan" />
-            <span>SELECTED IMAGE SPECIFICATIONS</span>
           </div>
+        ) : (
+          /* Prominently Show Active Image View */
+          <div className="image-stage-container">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/jpeg, image/jpg, image/png"
+              style={{ display: 'none' }}
+              onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+            />
 
-          {selectedFile ? (
-            <div className="file-specs-list">
-              <div className="spec-row">
-                <span className="spec-label">Filename</span>
-                <strong className="spec-val text-truncate">{selectedFile.name}</strong>
-              </div>
+            <img 
+              src={currentDisplayedImage} 
+              alt="Railway Track Frame" 
+              className="stage-image-main" 
+            />
 
-              <div className="spec-row">
-                <span className="spec-label">File Size</span>
-                <strong className="spec-val">{imageSpecs ? `${imageSpecs.sizeKB} KB` : '...'}</strong>
-              </div>
-
-              <div className="spec-row">
-                <span className="spec-label">Dimensions</span>
-                <strong className="spec-val">
-                  {imageSpecs ? `${imageSpecs.width} × ${imageSpecs.height} px` : 'Loading...'}
-                </strong>
-              </div>
-
-              <div className="spec-row">
-                <span className="spec-label">Inspection Target</span>
-                <strong className="spec-val text-emerald">YOLO + Self-Calibration</strong>
-              </div>
-
-              <div className="action-buttons-row">
-                <button 
-                  className="btn-run-inspection"
-                  onClick={handleRun}
-                  disabled={isInspecting || !backendOnline}
-                >
-                  {isInspecting ? (
-                    <>
-                      <RefreshCw size={16} className="spin-icon" /> PROCESSING...
-                    </>
-                  ) : (
-                    <>
-                      <Play size={16} /> RUN INSPECTION
-                    </>
-                  )}
-                </button>
-
-                <button 
-                  className="btn-clear-image"
-                  onClick={handleClear}
-                  disabled={isInspecting}
-                >
-                  CLEAR
-                </button>
-              </div>
+            <div className="image-stage-overlay-actions">
+              <button 
+                className="btn-reupload-floating"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <UploadCloud size={14} /> Upload New Image
+              </button>
+              <span className="view-tag-indicator">
+                {selectedFile ? 'NEW UPLOAD PREVIEW' : `VIEW: ${activeTab}`}
+              </span>
             </div>
-          ) : (
-            <div className="no-file-prompt">
-              <ImageIcon size={32} className="text-dim" />
-              <p>Select or drag a railway image to enable pipeline inspection execution.</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
