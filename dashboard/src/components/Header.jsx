@@ -6,8 +6,11 @@ export default function Header({ activeMode, onSwitchMode, backendOnline }) {
     <header className="topbar">
       <div className="brand">
         <div className="brand-titles">
-          <h1 className="brand-name">RAILWAY TRACK HEALTH</h1>
-          <span className="brand-sub">AUTONOMOUS AI INSPECTION</span>
+          <h1 className="brand-name">AUTONOMOUS SELF-CALIBRATING</h1>
+          <span className="brand-sub">RAILWAY TRACK HEALTH INTELLIGENCE</span>
+          <p className="brand-tagline">
+            AI-powered railway inspection with adaptive image calibration, defect detection and health assessment.
+          </p>
         </div>
       </div>
 
@@ -36,4 +39,3 @@ export default function Header({ activeMode, onSwitchMode, backendOnline }) {
     </header>
   );
 }
-

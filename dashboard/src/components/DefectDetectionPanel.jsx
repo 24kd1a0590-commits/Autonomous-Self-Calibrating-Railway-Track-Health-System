@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 export default function DefectDetectionPanel({ data }) {
   if (!data) return null;
@@ -12,34 +13,40 @@ export default function DefectDetectionPanel({ data }) {
 
   return (
     <div className="panel visual-defect-panel">
-      <div className="panel-micro-title">AI DETECTION</div>
+      <div className="panel-micro-title flex-between">
+        <span className="flex-center-gap">
+          AI DETECTION
+          <Tooltip text="Real-time YOLO object detection identifying surface defects, cracks, missing fasteners, and alignment anomalies." />
+        </span>
+        <span className={`status-pill-small ${defectsCount > 0 ? 'badge-critical' : 'badge-good'}`}>
+          {defectsCount > 0 ? 'DEFECTS FOUND' : 'CLEAN FRAME'}
+        </span>
+      </div>
 
-      {/* Low reliability alert priority */}
       {!isTrustworthy ? (
         <div className="inconclusive-banner">
-          <ShieldAlert size={18} className="text-amber" />
-          <span>⚠ INSPECTION INCONCLUSIVE</span>
+          <ShieldAlert size={16} className="text-amber" />
+          <span>INSPECTION INCONCLUSIVE (LOW RELIABILITY)</span>
         </div>
       ) : defectsCount > 0 ? (
         <div className="defect-detected-header">
           <div className="defect-count-row text-ruby">
             <span className="dot-ruby">●</span>
-            <span className="defect-count-text">{defectsCount} DEFECT DETECTED</span>
+            <span className="defect-count-text font-mono">{defectsCount} DEFECT DETECTED</span>
           </div>
 
           <div className="confidence-compact-row">
-            <span className="conf-label">Confidence</span>
-            <span className="conf-val font-mono">{confidencePct}%</span>
+            <span className="conf-label">Confidence:</span>
+            <span className="conf-val font-mono text-cyan">{confidencePct}%</span>
           </div>
         </div>
       ) : (
         <div className="no-defect-header text-emerald">
-          <CheckCircle2 size={18} />
+          <CheckCircle2 size={16} />
           <span>✓ NO TARGET DEFECT DETECTED</span>
         </div>
       )}
 
-      {/* Annotated Result Image Frame */}
       {resultImg && (
         <div className="defect-annotated-frame">
           <img src={resultImg} alt="AI Defect Detection Output" />
@@ -48,4 +55,3 @@ export default function DefectDetectionPanel({ data }) {
     </div>
   );
 }
-

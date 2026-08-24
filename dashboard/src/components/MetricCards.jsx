@@ -1,18 +1,21 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 export default function MetricCards({ data }) {
   if (!data) return null;
 
-  const qualityAfter = (data.quality_after ?? 0).toFixed(1);
-  const qualityGain = data.quality_gain ?? 0;
+  const qBefore = (data.quality_before ?? 0).toFixed(1);
+  const qAfter = (data.quality_after ?? 0).toFixed(1);
+  const qGain = data.quality_gain ?? 0;
 
-  const relScore = (data.reliability ?? 0).toFixed(1);
-  const relStatus = (data.reliability_status || 'HIGH').toUpperCase();
+  const relScore = (data.reliability ?? 0).toFixed(2);
+  const relStatus = (data.reliability_status || (data.reliability >= 75 ? 'HIGH TRUST' : data.reliability >= 50 ? 'MODERATE TRUST' : 'LOW TRUST')).toUpperCase();
 
   const defectsCount = data.defects ?? 0;
+  const defectStatus = defectsCount > 0 ? (defectsCount > 1 ? 'HIGH PRIORITY' : 'DETECTED') : 'CLEAN';
 
-  const thiScore = (data.thi ?? 0).toFixed(1);
+  const thiScore = (data.thi ?? 0).toFixed(2);
   const condition = (data.condition || 'POOR').toUpperCase();
 
   const relBadgeClass = data.reliability >= 75 ? 'badge-good' : data.reliability >= 50 ? 'badge-warning' : 'badge-critical';
@@ -21,39 +24,12 @@ export default function MetricCards({ data }) {
 
   return (
     <section className="four-result-cards-grid">
-      {/* 1. IMAGE QUALITY */}
+      {/* 1. THI */}
       <div className="major-result-card">
-        <span className="card-micro-label">IMAGE QUALITY</span>
-        <div className="card-main-number text-cyan">{qualityAfter}</div>
-        <div className="card-indicator-pill pill-cyan">
-          <ArrowUpRight size={13} />
-          <span>{qualityGain > 0 ? `+${qualityGain.toFixed(1)}` : '0.0'}</span>
+        <div className="card-top-header">
+          <span className="card-micro-label">THI</span>
+          <Tooltip text="Track Health Index: overall track condition score (0-100)." />
         </div>
-      </div>
-
-      {/* 2. RELIABILITY */}
-      <div className="major-result-card">
-        <span className="card-micro-label">RELIABILITY</span>
-        <div className="card-main-number text-white">{relScore}</div>
-        <div className={`card-status-tag ${relBadgeClass}`}>
-          {relStatus}
-        </div>
-      </div>
-
-      {/* 3. DEFECTS */}
-      <div className="major-result-card">
-        <span className="card-micro-label">DEFECTS</span>
-        <div className={`card-main-number ${defectsCount > 0 ? 'text-ruby' : 'text-emerald'}`}>
-          {defectsCount}
-        </div>
-        <div className={`card-status-tag ${defectBadgeClass}`}>
-          {defectsCount > 0 ? 'DETECTED' : 'CLEAN'}
-        </div>
-      </div>
-
-      {/* 4. TRACK HEALTH */}
-      <div className="major-result-card">
-        <span className="card-micro-label">TRACK HEALTH</span>
         <div className={`card-main-number ${data.thi >= 75 ? 'text-emerald' : data.thi >= 40 ? 'text-amber' : 'text-ruby'}`}>
           {thiScore}
         </div>
@@ -61,7 +37,49 @@ export default function MetricCards({ data }) {
           {condition}
         </div>
       </div>
+
+      {/* 2. RELIABILITY */}
+      <div className="major-result-card">
+        <div className="card-top-header">
+          <span className="card-micro-label">RELIABILITY</span>
+          <Tooltip text="Inspection Reliability score (0-100) based on stability, quality gain, and confidence." />
+        </div>
+        <div className="card-main-number text-white">{relScore}</div>
+        <div className={`card-status-tag ${relBadgeClass}`}>
+          {relStatus.includes('TRUST') ? relStatus : `${relStatus} TRUST`}
+        </div>
+      </div>
+
+      {/* 3. DEFECTS */}
+      <div className="major-result-card">
+        <div className="card-top-header">
+          <span className="card-micro-label">DEFECTS</span>
+          <Tooltip text="Total AI-detected track defects in current frame." />
+        </div>
+        <div className={`card-main-number ${defectsCount > 0 ? 'text-ruby' : 'text-emerald'}`}>
+          {defectsCount}
+        </div>
+        <div className={`card-status-tag ${defectBadgeClass}`}>
+          {defectStatus}
+        </div>
+      </div>
+
+      {/* 4. IMAGE QUALITY */}
+      <div className="major-result-card">
+        <div className="card-top-header">
+          <span className="card-micro-label">IMAGE QUALITY</span>
+          <Tooltip text="BRISQUE image quality assessment before and after self-calibration." />
+        </div>
+        <div className="card-transition-number text-cyan">
+          <span className="num-before">{qBefore}</span>
+          <span className="transition-arrow">→</span>
+          <span className="num-after">{qAfter}</span>
+        </div>
+        <div className="card-indicator-pill pill-cyan">
+          <ArrowUpRight size={13} />
+          <span>{qGain > 0 ? `+${qGain.toFixed(1)}` : '0.0'}</span>
+        </div>
+      </div>
     </section>
   );
 }
-

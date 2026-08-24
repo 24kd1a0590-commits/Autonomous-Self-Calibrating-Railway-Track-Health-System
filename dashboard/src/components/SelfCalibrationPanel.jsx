@@ -1,13 +1,15 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 export default function SelfCalibrationPanel({ data }) {
   if (!data) return null;
 
-  const qBefore = (data.quality_before ?? 0).toFixed(1);
-  const qAfter = (data.quality_after ?? 0).toFixed(1);
+  const qBefore = (data.quality_before ?? 0).toFixed(2);
+  const qAfter = (data.quality_after ?? 0).toFixed(2);
+  const qGain = (data.quality_gain ?? 0).toFixed(2);
 
-  // Extract compact technique names from data.calibration_operations (e.g. CLAHE, DENOISING, BRIGHTNESS)
+  // Extract operations directly from data.calibration_operations
   const rawOps = data.calibration_operations || [];
   let tags = [];
 
@@ -32,28 +34,43 @@ export default function SelfCalibrationPanel({ data }) {
 
   return (
     <div className="panel visual-calibration-panel">
-      <div className="panel-micro-title">SELF-CALIBRATION</div>
+      <div className="panel-micro-title flex-between">
+        <span className="flex-center-gap">
+          SELF-CALIBRATION
+          <Tooltip text="Adaptive image enhancement module that dynamically applies CLAHE, denoising, sharpening, or brightness correction based on frame quality." />
+        </span>
+        <span className="gain-chip pill-cyan">
+          GAIN: +{qGain}
+        </span>
+      </div>
 
       <div className="before-after-visual-container">
         {/* BEFORE BOX */}
         <div className="comparison-box">
-          <span className="box-badge badge-muted">BEFORE</span>
+          <div className="box-header-tag">
+            <span className="box-badge badge-muted">BEFORE</span>
+            <span className="box-score font-mono">{qBefore}</span>
+          </div>
           <div className="img-frame-thumb">
             {originalImg ? (
               <img src={originalImg} alt="Original Raw Track" />
             ) : (
-              <div className="thumb-placeholder">RAW</div>
+              <div className="thumb-placeholder">RAW IMAGE</div>
             )}
           </div>
         </div>
 
-        <div className="arrow-connector-middle">
-          <ArrowRight size={20} className="arrow-icon-cyan" />
+        <div className="adapt-arrow-wrap">
+          <div className="adapt-pill">ADAPT</div>
+          <ArrowRight size={18} className="arrow-icon-cyan" />
         </div>
 
         {/* AFTER BOX */}
         <div className="comparison-box">
-          <span className="box-badge badge-cyan">AFTER</span>
+          <div className="box-header-tag">
+            <span className="box-badge badge-cyan">AFTER</span>
+            <span className="box-score font-mono text-cyan">{qAfter}</span>
+          </div>
           <div className="img-frame-thumb glow-border-cyan">
             {calibratedImg ? (
               <img src={calibratedImg} alt="Calibrated Track" />
@@ -64,21 +81,16 @@ export default function SelfCalibrationPanel({ data }) {
         </div>
       </div>
 
-      <div className="quality-transition-row">
-        <span className="q-label">Quality:</span>
-        <span className="q-before-num">{qBefore}</span>
-        <ArrowRight size={14} className="q-arrow" />
-        <span className="q-after-num text-cyan">{qAfter}</span>
-      </div>
-
-      <div className="calibration-tech-tags">
-        {tags.map((tag, idx) => (
-          <span key={idx} className="tech-tag">
-            {tag}
-          </span>
-        ))}
+      <div className="calibration-operations-chips">
+        <span className="chips-label">APPLIED OPERATIONS:</span>
+        <div className="chips-list">
+          {tags.map((tag, idx) => (
+            <span key={idx} className="op-chip">
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
-

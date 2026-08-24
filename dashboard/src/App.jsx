@@ -94,6 +94,7 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Topbar Navigation & Minimal Hero */}
       <Header 
         activeMode={activeMode} 
         onSwitchMode={setActiveMode} 
@@ -101,12 +102,9 @@ function App() {
       />
 
       <main className="dashboard-body">
-        {/* Top Hero with THI Radial Gauge */}
-        <HeroSection activeInspection={selectedInspection} />
-
         {activeMode === "LIVE" ? (
           <>
-            {/* 1. Main Action: Image Upload & View Area */}
+            {/* 1. Main Action: Compact Upload & Large Image Viewer Center */}
             <LiveUploadPanel
               backendOnline={backendOnline}
               isInspecting={isInspecting}
@@ -115,27 +113,37 @@ function App() {
               activeInspection={selectedInspection}
             />
 
-            {/* 2. Visual 9-Stage Node Pipeline directly below image */}
+            {/* 2. Compact 9-Stage Visual Pipeline */}
             <CompletePipeline 
               data={selectedInspection} 
               isInspecting={isInspecting} 
               activeStageIndex={activeStageIndex} 
             />
 
-            {/* 3. Four Main Result Cards Only */}
+            {/* 3. Four Main Dominant Metric Cards */}
             <MetricCards data={selectedInspection} />
 
-            {/* 4. Self-Calibration & Reliability Grid */}
+            {/* 4. Visual 2-Column Grid Row 1: THI Arc Gauge & Reliability Breakdown */}
             <section className="control-grid-2col">
-              <SelfCalibrationPanel data={selectedInspection} />
+              <HeroSection activeInspection={selectedInspection} />
               <ReliabilityPanel data={selectedInspection} />
             </section>
 
-            {/* 5. AI Defect Detection & Decision Support Grid */}
+            {/* 5. Visual 2-Column Grid Row 2: Self-Calibration & Decision Support */}
             <section className="control-grid-2col">
-              <DefectDetectionPanel data={selectedInspection} />
+              <SelfCalibrationPanel data={selectedInspection} />
               <DecisionSupportPanel data={selectedInspection} />
             </section>
+
+            {/* 6. Collapsible Inspection History Section at Bottom */}
+            <InspectionHistoryTable
+              activeId={selectedInspection?.id}
+              onSelectInspection={(item) => {
+                setSelectedInspection(item);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              defaultExpanded={false}
+            />
           </>
         ) : (
           /* HISTORY MODE */
@@ -147,6 +155,7 @@ function App() {
                 setSelectedInspection(item);
                 setActiveMode("LIVE");
               }}
+              defaultExpanded={true}
             />
           </>
         )}

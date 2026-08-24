@@ -1,4 +1,5 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
 function HorizontalBar({ label, value, color = "cyan" }) {
   const clampedVal = Math.min(100, Math.max(0, value));
@@ -19,8 +20,9 @@ function HorizontalBar({ label, value, color = "cyan" }) {
 export default function ReliabilityPanel({ data }) {
   if (!data) return null;
 
-  const reliabilityScore = Math.round(data.reliability ?? 0);
-  const statusText = (data.reliability_status || (reliabilityScore >= 75 ? 'HIGH TRUST' : reliabilityScore >= 50 ? 'MODERATE' : 'LOW TRUST')).toUpperCase();
+  const reliabilityScore = (data.reliability ?? 0).toFixed(2);
+  const relNum = parseFloat(reliabilityScore);
+  const statusText = (data.reliability_status || (relNum >= 75 ? 'HIGH TRUST' : relNum >= 50 ? 'MODERATE TRUST' : 'LOW TRUST')).toUpperCase();
 
   const comps = data.components || {
     quality_component: data.quality_after ?? 80,
@@ -30,19 +32,30 @@ export default function ReliabilityPanel({ data }) {
     degradation_penalty: 0
   };
 
-  const trustTagColor = reliabilityScore >= 75 ? 'badge-good' : reliabilityScore >= 50 ? 'badge-warning' : 'badge-critical';
+  const trustTagColor = relNum >= 75 ? 'badge-good' : relNum >= 50 ? 'badge-warning' : 'badge-critical';
 
   return (
     <div className="panel visual-reliability-panel">
-      <div className="panel-micro-title">INSPECTION RELIABILITY</div>
-
-      <div className="reliability-score-header">
-        <div className="rel-score-large-wrap">
-          <span className="rel-score-num text-white">{reliabilityScore}</span>
-          <span className="rel-score-denom">/ 100</span>
-        </div>
+      <div className="panel-micro-title flex-between">
+        <span className="flex-center-gap">
+          INSPECTION RELIABILITY
+          <Tooltip text="Measures trustworthiness of inspection results based on frame quality, calibration stability, detection confidence, and penalties." />
+        </span>
         <div className={`rel-status-badge ${trustTagColor}`}>
           {statusText.includes('TRUST') ? statusText : `${statusText} TRUST`}
+        </div>
+      </div>
+
+      <div className="reliability-main-score-card">
+        <div className="rel-score-large-wrap">
+          <span className="rel-score-num text-white font-mono">{reliabilityScore}</span>
+          <span className="rel-score-denom font-mono">/ 100</span>
+        </div>
+        <div className="rel-progress-bar-large">
+          <div 
+            className={`rel-progress-fill ${relNum >= 75 ? 'bg-emerald' : relNum >= 50 ? 'bg-amber' : 'bg-ruby'}`}
+            style={{ width: `${Math.min(100, Math.max(0, relNum))}%` }}
+          ></div>
         </div>
       </div>
 
@@ -56,4 +69,3 @@ export default function ReliabilityPanel({ data }) {
     </div>
   );
 }
-
