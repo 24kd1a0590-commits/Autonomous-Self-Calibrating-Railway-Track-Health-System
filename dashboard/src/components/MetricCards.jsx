@@ -1,26 +1,37 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import Tooltip from './Tooltip';
+import { 
+  getQualityBefore, 
+  getQualityAfter, 
+  getQualityGain, 
+  getReliabilityScore, 
+  getReliabilityStatus, 
+  getDefectCount, 
+  getTHI 
+} from '../utils/formatters';
 
 export default function MetricCards({ data }) {
   if (!data) return null;
 
-  const qBefore = (data.quality_before ?? 0).toFixed(1);
-  const qAfter = (data.quality_after ?? 0).toFixed(1);
-  const qGain = data.quality_gain ?? 0;
+  const qBefore = getQualityBefore(data).toFixed(1);
+  const qAfter = getQualityAfter(data).toFixed(1);
+  const qGain = getQualityGain(data);
 
-  const relScore = (data.reliability ?? 0).toFixed(2);
-  const relStatus = (data.reliability_status || (data.reliability >= 75 ? 'HIGH TRUST' : data.reliability >= 50 ? 'MODERATE TRUST' : 'LOW TRUST')).toUpperCase();
+  const relNum = getReliabilityScore(data);
+  const relScore = relNum.toFixed(2);
+  const relStatus = getReliabilityStatus(data);
 
-  const defectsCount = data.defects ?? 0;
+  const defectsCount = getDefectCount(data);
   const defectStatus = defectsCount > 0 ? (defectsCount > 1 ? 'HIGH PRIORITY' : 'DETECTED') : 'CLEAN';
 
-  const thiScore = (data.thi ?? 0).toFixed(2);
+  const thiNum = getTHI(data);
+  const thiScore = thiNum.toFixed(2);
   const condition = (data.condition || 'POOR').toUpperCase();
 
-  const relBadgeClass = data.reliability >= 75 ? 'badge-good' : data.reliability >= 50 ? 'badge-warning' : 'badge-critical';
+  const relBadgeClass = relNum >= 75 ? 'badge-good' : relNum >= 50 ? 'badge-warning' : 'badge-critical';
   const defectBadgeClass = defectsCount > 0 ? 'badge-critical' : 'badge-good';
-  const thiBadgeClass = data.thi >= 75 ? 'badge-good' : data.thi >= 40 ? 'badge-warning' : 'badge-critical';
+  const thiBadgeClass = thiNum >= 75 ? 'badge-good' : thiNum >= 40 ? 'badge-warning' : 'badge-critical';
 
   return (
     <section className="four-result-cards-grid">
@@ -30,7 +41,7 @@ export default function MetricCards({ data }) {
           <span className="card-micro-label">THI</span>
           <Tooltip text="Track Health Index: overall track condition score (0-100)." />
         </div>
-        <div className={`card-main-number ${data.thi >= 75 ? 'text-emerald' : data.thi >= 40 ? 'text-amber' : 'text-ruby'}`}>
+        <div className={`card-main-number ${thiNum >= 75 ? 'text-emerald' : thiNum >= 40 ? 'text-amber' : 'text-ruby'}`}>
           {thiScore}
         </div>
         <div className={`card-status-tag ${thiBadgeClass}`}>
@@ -83,3 +94,4 @@ export default function MetricCards({ data }) {
     </section>
   );
 }
+

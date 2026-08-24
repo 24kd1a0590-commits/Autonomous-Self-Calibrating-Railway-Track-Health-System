@@ -1,5 +1,6 @@
 import React from 'react';
 import Tooltip from './Tooltip';
+import { getReliabilityScore, getReliabilityStatus, getQualityAfter, getQualityGain, getDefectCount, getConfidence } from '../utils/formatters';
 
 function HorizontalBar({ label, value, color = "cyan" }) {
   const clampedVal = Math.min(100, Math.max(0, value));
@@ -20,15 +21,20 @@ function HorizontalBar({ label, value, color = "cyan" }) {
 export default function ReliabilityPanel({ data }) {
   if (!data) return null;
 
-  const reliabilityScore = (data.reliability ?? 0).toFixed(2);
-  const relNum = parseFloat(reliabilityScore);
-  const statusText = (data.reliability_status || (relNum >= 75 ? 'HIGH TRUST' : relNum >= 50 ? 'MODERATE TRUST' : 'LOW TRUST')).toUpperCase();
+  const relNum = getReliabilityScore(data);
+  const reliabilityScore = relNum.toFixed(2);
+  const statusText = getReliabilityStatus(data);
+
+  const qAfter = getQualityAfter(data);
+  const qGain = getQualityGain(data);
+  const defects = getDefectCount(data);
+  const conf = getConfidence(data);
 
   const comps = data.components || {
-    quality_component: data.quality_after ?? 80,
-    quality_gain_component: Math.min(100, Math.max(0, 50 + (data.quality_gain ?? 0) * 4)),
+    quality_component: qAfter || 80,
+    quality_gain_component: Math.min(100, Math.max(0, 50 + qGain * 4)),
     stability_component: data.stability_pct ?? 90,
-    confidence_component: data.defects > 0 ? (data.confidence ?? 0.85) * 100 : 80,
+    confidence_component: defects > 0 ? conf * 100 : 80,
     degradation_penalty: 0
   };
 
@@ -69,3 +75,4 @@ export default function ReliabilityPanel({ data }) {
     </div>
   );
 }
+

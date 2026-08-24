@@ -1,10 +1,11 @@
 import React from 'react';
 import Tooltip from './Tooltip';
+import { getTHI } from '../utils/formatters';
 
 export default function HeroSection({ activeInspection }) {
   if (!activeInspection) return null;
 
-  const thi = activeInspection.thi ?? 0;
+  const thi = getTHI(activeInspection);
   const condition = (activeInspection.condition || 'UNKNOWN').toUpperCase();
   const risk = (activeInspection.risk_level || 'LOW').toUpperCase();
   const percentage = Math.min(100, Math.max(0, thi));
@@ -30,7 +31,7 @@ export default function HeroSection({ activeInspection }) {
           <Tooltip text="Track Health Index: integrated track condition score (0-100) combining quality, calibration, stability, and defects." />
         </span>
         <span className="active-target-tag">
-          TARGET: <strong className="font-mono text-cyan">{activeInspection.shortName || activeInspection.id}</strong>
+          TARGET: <strong className="font-mono text-cyan">{activeInspection.shortName || activeInspection.filename || activeInspection.id}</strong>
         </span>
       </div>
 
@@ -79,3 +80,4 @@ export default function HeroSection({ activeInspection }) {
     </div>
   );
 }
+

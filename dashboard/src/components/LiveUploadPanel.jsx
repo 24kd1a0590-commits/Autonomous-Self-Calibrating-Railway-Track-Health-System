@@ -1,16 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Play, RefreshCw, AlertCircle, FileImage, Trash2, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { UploadCloud, Play, RefreshCw, AlertCircle, FileImage, Trash2, Image as ImageIcon } from 'lucide-react';
 import Tooltip from './Tooltip';
+import { getQualityAfter, getDefectCount, getConfidence } from '../utils/formatters';
 
 export default function LiveUploadPanel({ 
   backendOnline, 
   isInspecting, 
   onRunInspection, 
+  onSelectTestImage,
+  testImages = [],
   uploadError,
   activeInspection,
   onSwitchImageMode
 }) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedTestImage, setSelectedTestImage] = useState("");
   const [fileDimensions, setFileDimensions] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -27,13 +31,13 @@ export default function LiveUploadPanel({
     }
 
     setSelectedFile(file);
+    setSelectedTestImage("");
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target.result;
       setImagePreview(dataUrl);
 
-      // Measure dimensions
       const img = new Image();
       img.onload = () => {
         setFileDimensions(`${img.width} × ${img.height} px`);
@@ -53,41 +57,55 @@ export default function LiveUploadPanel({
 
   const handleClear = () => {
     setSelectedFile(null);
+    setSelectedTestImage("");
     setImagePreview(null);
     setFileDimensions(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleRun = () => {
-    if (!selectedFile) return;
-    onRunInspection(selectedFile);
+    if (selectedFile) {
+      onRunInspection(selectedFile);
+    } else if (selectedTestImage) {
+      onSelectTestImage(selectedTestImage);
+    }
   };
 
-  // Determine current display image:
-  // If activeInspection exists and user has NOT selected a new pending upload:
-  // tab ORIGINAL -> image_urls.original
-  // tab CALIBRATED -> image_urls.calibrated
-  // tab FINAL -> image_urls.annotated
-  const currentDisplayedImage = selectedFile && imagePreview
+  const handleDatasetChange = (e) => {
+    const filename = e.target.value;
+    setSelectedTestImage(filename);
+    setSelectedFile(null);
+    setImagePreview(null);
+    if (filename) {
+      onSelectTestImage(filename);
+    }
+  };
+
+  // Determine current display image URL:
+  const currentDisplayedImage = isInspecting
+    ? null
+    : (selectedFile && imagePreview)
     ? imagePreview
     : activeInspection?.image_urls
     ? (activeTab === 'ORIGINAL' ? activeInspection.image_urls.original :
        activeTab === 'CALIBRATED' ? activeInspection.image_urls.calibrated :
+       activeTab === 'FINAL' ? activeInspection.image_urls.annotated :
        activeInspection.image_urls.annotated)
-    : null;
+    : activeInspection?.annotated_image || activeInspection?.original_image || null;
 
-  const qualityScore = (activeInspection?.quality_after ?? 0).toFixed(1);
-  const defectsCount = activeInspection?.defects ?? 0;
-  const confidenceVal = (activeInspection?.confidence ?? 0).toFixed(2);
+  const qualityScore = getQualityAfter(activeInspection).toFixed(1);
+  const defectsCount = getDefectCount(activeInspection);
+  const confidenceVal = getConfidence(activeInspection).toFixed(2);
+
 
   return (
     <div className="live-inspection-main-wrapper">
-      {/* 1. Compact Industrial Upload Card */}
+      {/* 1. Compact Industrial Upload & Dataset Selector Card */}
       <div className="panel upload-industrial-card">
         <div className="panel-micro-title flex-between">
           <span className="flex-center-gap">
             LIVE INSPECTION
-            <Tooltip text="Upload a railway track image to execute the 9-stage autonomous inspection pipeline." />
+            <Tooltip text="Select a test image from dataset or upload a custom railway track image to run the Python self-calibration & YOLO pipeline." />
           </span>
           <span className={`status-pill-small ${backendOnline ? 'online' : 'offline'}`}>
             {backendOnline ? 'SYSTEM READY' : 'BACKEND OFFLINE'}
@@ -100,6 +118,36 @@ export default function LiveUploadPanel({
             <span>{uploadError}</span>
           </div>
         )}
+
+        {/* Dataset Image Dropdown Selector */}
+        <div className="dataset-selector-box" style={{ marginBottom: '12px' }}>
+          <label className="dataset-label font-mono flex-center-gap" style={{ fontSize: '11px', color: '#00f0ff', marginBottom: '4px', display: 'block' }}>
+            <ImageIcon size={13} /> SELECT FROM TEST DATASET ({testImages.length} IMAGES AVAILABLE):
+          </label>
+          <select 
+            className="dataset-dropdown font-mono" 
+            value={selectedTestImage}
+            onChange={handleDatasetChange}
+            disabled={isInspecting || !backendOnline}
+            style={{
+              width: '100%',
+              backgroundColor: '#0a0f1d',
+              color: '#38bdf8',
+              border: '1px solid #1e293b',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="">-- Choose a Dataset Test Image --</option>
+            {testImages.map((img) => (
+              <option key={img.filename} value={img.filename}>
+                {img.filename}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {!selectedFile ? (
           /* Dropzone state */
@@ -118,10 +166,10 @@ export default function LiveUploadPanel({
               onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
             />
             <div className="dropzone-content">
-              <UploadCloud size={32} className="upload-icon-cyan" />
+              <UploadCloud size={28} className="upload-icon-cyan" />
               <div className="dropzone-text">
-                <span className="drop-main">Drop railway image here</span>
-                <span className="drop-sub">[ CHOOSE IMAGE ] or [ DRAG & DROP ]</span>
+                <span className="drop-main">OR UPLOAD CUSTOM IMAGE</span>
+                <span className="drop-sub">[ CLICK TO BROWSE ] or [ DRAG & DROP ]</span>
               </div>
             </div>
           </div>
@@ -148,7 +196,7 @@ export default function LiveUploadPanel({
               <button 
                 className="btn-run-inspection"
                 onClick={handleRun}
-                disabled={!selectedFile || isInspecting || !backendOnline}
+                disabled={(!selectedFile && !selectedTestImage) || isInspecting || !backendOnline}
               >
                 {isInspecting ? (
                   <>
@@ -166,7 +214,7 @@ export default function LiveUploadPanel({
       </div>
 
       {/* 2. Visual Center Image Viewer */}
-      <div className="panel image-center-viewer-panel">
+      <div className="panel image-center-viewer-panel" style={{ position: 'relative' }}>
         <div className="image-viewer-header">
           <div className="view-tabs">
             <button 
@@ -200,12 +248,23 @@ export default function LiveUploadPanel({
           )}
         </div>
 
-        <div className="main-image-viewport">
-          {currentDisplayedImage ? (
+        <div className="main-image-viewport" style={{ position: 'relative', minHeight: '380px' }}>
+          {isInspecting ? (
+            <div className="viewport-placeholder" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <RefreshCw size={48} className="spin-icon text-cyan" style={{ marginBottom: '16px' }} />
+              <span className="text-cyan font-mono" style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                Analyzing image...
+              </span>
+              <span className="text-muted font-mono" style={{ fontSize: '12px', marginTop: '6px' }}>
+                Running Image Quality Assessment → Self-Calibration → YOLO Detection → Reliability Evaluation
+              </span>
+            </div>
+          ) : currentDisplayedImage ? (
             <img 
               src={currentDisplayedImage} 
               alt="Inspection Visual Stage" 
               className="viewport-img"
+              key={currentDisplayedImage}
             />
           ) : (
             <div className="viewport-placeholder">
@@ -218,3 +277,4 @@ export default function LiveUploadPanel({
     </div>
   );
 }
+

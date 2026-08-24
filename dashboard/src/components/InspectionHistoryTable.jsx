@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, History } from 'lucide-react';
 import { allInspections } from '../data/inspectionData';
 import Tooltip from './Tooltip';
+import { getTHI, getReliabilityScore, getDefectCount } from '../utils/formatters';
 
 export default function InspectionHistoryTable({ activeId, onSelectInspection, defaultExpanded = false }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -25,7 +26,7 @@ export default function InspectionHistoryTable({ activeId, onSelectInspection, d
           <History size={16} className="text-cyan" />
           <h3 className="history-title">INSPECTION HISTORY</h3>
           <span className="count-badge font-mono">{allInspections.length} INSPECTIONS</span>
-          <Tooltip text="Database of 85 historical inspection runs with filters, charts, and track health scores." />
+          <Tooltip text="Database of historical inspection runs with filters and track health scores." />
         </div>
 
         <div className="history-header-actions">
@@ -76,9 +77,9 @@ export default function InspectionHistoryTable({ activeId, onSelectInspection, d
             <tbody>
               {filteredData.map((item) => {
                 const isSelected = item.id === activeId;
-                const thi = (item.thi ?? 0).toFixed(1);
-                const rel = (item.reliability ?? 0).toFixed(1);
-                const defects = item.defects ?? 0;
+                const thi = getTHI(item).toFixed(1);
+                const rel = getReliabilityScore(item).toFixed(1);
+                const defects = getDefectCount(item);
                 const risk = (item.risk_level || 'LOW').toUpperCase();
                 const action = (item.recommendation || 'MONITOR').toUpperCase();
 
@@ -93,7 +94,7 @@ export default function InspectionHistoryTable({ activeId, onSelectInspection, d
                   >
                     <td className="col-image font-mono">
                       {isSelected && <span className="active-cyan-dot">●</span>}
-                      {item.shortName || item.image}
+                      {item.shortName || item.filename || item.image || item.id}
                     </td>
                     <td className={`col-thi font-mono ${condClass}`}>{thi}</td>
                     <td className={`col-defects font-mono ${defects > 0 ? 'text-ruby' : 'text-emerald'}`}>
@@ -114,3 +115,4 @@ export default function InspectionHistoryTable({ activeId, onSelectInspection, d
     </div>
   );
 }
+

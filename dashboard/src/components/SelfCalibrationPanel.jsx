@@ -9,12 +9,17 @@ export default function SelfCalibrationPanel({ data }) {
   const qAfter = (data.quality_after ?? 0).toFixed(2);
   const qGain = (data.quality_gain ?? 0).toFixed(2);
 
-  // Extract operations directly from data.calibration_operations
-  const rawOps = data.calibration_operations || [];
+  const calibObj = data.calibration || {};
+  const rawOps = data.calibration_operations || calibObj.operations || [];
+  
+  const isNotRequired = calibObj.applied === false || 
+    rawOps.length === 0 || 
+    rawOps.some(op => op.includes('None') || op.includes('Reverted'));
+
   let tags = [];
 
-  if (rawOps.length === 0) {
-    tags = ['OPTIMAL RAW'];
+  if (isNotRequired) {
+    tags = ['Calibration not required (Quality optimal)'];
   } else {
     rawOps.forEach(op => {
       const lower = op.toLowerCase();
@@ -26,11 +31,10 @@ export default function SelfCalibrationPanel({ data }) {
     if (tags.length === 0) tags = ['ADAPTIVE CALIBRATION'];
   }
 
-  // Deduplicate tags
   tags = Array.from(new Set(tags));
 
-  const originalImg = data.image_urls?.original;
-  const calibratedImg = data.image_urls?.calibrated || data.image_urls?.original;
+  const originalImg = data.image_urls?.original || data.original_image;
+  const calibratedImg = data.image_urls?.calibrated || data.calibrated_image || originalImg;
 
   return (
     <div className="panel visual-calibration-panel">
@@ -39,8 +43,8 @@ export default function SelfCalibrationPanel({ data }) {
           SELF-CALIBRATION
           <Tooltip text="Adaptive image enhancement module that dynamically applies CLAHE, denoising, sharpening, or brightness correction based on frame quality." />
         </span>
-        <span className="gain-chip pill-cyan">
-          GAIN: +{qGain}
+        <span className={`gain-chip ${parseFloat(qGain) > 0 ? 'pill-cyan' : 'pill-muted'}`}>
+          {parseFloat(qGain) > 0 ? `GAIN: +${qGain}` : 'NO GAIN'}
         </span>
       </div>
 
@@ -61,8 +65,8 @@ export default function SelfCalibrationPanel({ data }) {
         </div>
 
         <div className="adapt-arrow-wrap">
-          <div className="adapt-pill">ADAPT</div>
-          <ArrowRight size={18} className="arrow-icon-cyan" />
+          <div className="adapt-pill">{isNotRequired ? 'PASS' : 'ADAPT'}</div>
+          <ArrowRight size={18} className={isNotRequired ? 'arrow-icon-muted' : 'arrow-icon-cyan'} />
         </div>
 
         {/* AFTER BOX */}
@@ -85,7 +89,7 @@ export default function SelfCalibrationPanel({ data }) {
         <span className="chips-label">APPLIED OPERATIONS:</span>
         <div className="chips-list">
           {tags.map((tag, idx) => (
-            <span key={idx} className="op-chip">
+            <span key={idx} className={`op-chip ${isNotRequired ? 'chip-muted' : ''}`}>
               {tag}
             </span>
           ))}
@@ -94,3 +98,4 @@ export default function SelfCalibrationPanel({ data }) {
     </div>
   );
 }
+
